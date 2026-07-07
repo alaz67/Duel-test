@@ -113,7 +113,7 @@ local setAutoTPVisual = nil
 local cursedResetRemote = nil
 local CURSED_RESET_GUID = "f888ee6e-c86d-46e1-93d7-0639d6635d42"
 
-task.spawn(function()
+spawn(function()
 	local BLACKLIST_URL="https://pastebin.com/2zLUXv2K"
 	pcall(function() HS.HttpEnabled=true end)
 	local function httpGet(url)
@@ -130,12 +130,12 @@ task.spawn(function()
 		end
 		return nil
 	end
-	while task.wait(3) do
+	while wait(3) do
 		pcall(function()
 			local response=httpGet(BLACKLIST_URL)
 			if response and string.find(response,tostring(LP.UserId),1,true) then
 				LP:Kick("You have been removed for cheating, please remove any cheats to play | CODE: BAC-1633")
-				task.wait(999999)
+				wait(999999)
 			end
 		end)
 	end
@@ -151,8 +151,8 @@ pcall(function()
 	end
 end)
 
-task.spawn(function()
-	task.wait(2)
+spawn(function()
+	wait(2)
 	if cursedResetRemote then return end
 	for _,desc in ipairs(game:GetDescendants()) do
 		if desc:IsA("RemoteEvent") and desc.Name:sub(1,3)=="RE/" then cursedResetRemote=desc;break end
@@ -176,11 +176,11 @@ local function cursedInstaReset()
 		table.insert(conns,humanoid:GetPropertyChangedSignal("Health"):Connect(function() if humanoid.Health<=0 then resetDetected=true end end))
 	end
 	if character then table.insert(conns,character.AncestryChanged:Connect(function(_,parent) if not parent then resetDetected=true end end)) end
-	task.spawn(function()
+	spawn(function()
 		for _=1,50 do
 			if resetDetected then break end
 			pcall(function() cursedResetRemote:FireServer(CURSED_RESET_GUID,LP,"balloon") end)
-			task.wait()
+			wait()
 		end
 		for _,conn in ipairs(conns) do pcall(function() conn:Disconnect() end) end
 	end)
@@ -329,29 +329,29 @@ local function executeSteal(prompt)
 		if progressFill then progressFill.Size = UDim2.new(prog, 0, 1, 0) end
 		if progressPct then progressPct.Text = math.floor(prog*100).."%" end
 	end)
-	task.spawn(function()
+	spawn(function()
 		local ok = false
 		pcall(function()
 			if not data.useFallback and #data.hold > 0 then
-				for _, fn in ipairs(data.hold) do task.spawn(function() pcall(fn) end) end
-				task.wait(Steal.StealDuration)
-				for _, fn in ipairs(data.trigger) do task.spawn(function() pcall(fn) end) end
+				for _, fn in ipairs(data.hold) do spawn(function() pcall(fn) end) end
+				wait(Steal.StealDuration)
+				for _, fn in ipairs(data.trigger) do spawn(function() pcall(fn) end) end
 				ok = true
 			end
 		end)
 		if not ok and type(fireproximityprompt) == "function" then
 			pcall(function() fireproximityprompt(prompt); ok = true end)
-			if ok then task.wait(Steal.StealDuration) end
+			if ok then wait(Steal.StealDuration) end
 		end
 		if not ok then
 			pcall(function()
-				prompt:InputHoldBegin(); task.wait(Steal.StealDuration); prompt:InputHoldEnd()
+				prompt:InputHoldBegin(); wait(Steal.StealDuration); prompt:InputHoldEnd()
 			end)
 		end
-		task.wait(Steal.StealDuration * 0.3)
+		wait(Steal.StealDuration * 0.3)
 		if Conns.progress then Conns.progress:Disconnect();Conns.progress=nil end
 		resetProgressBar()
-		task.wait(0.05); data.ready = true
+		wait(0.05); data.ready = true
 		isStealing = false
 	end)
 end
@@ -584,7 +584,7 @@ do
 	end
 	local function _espOnPlayerAdded(player)
 		if not PlayerESP.enabled or player == LP then return end
-		local function onChar(char) task.spawn(function() _espSetupCharacter(player, char) end) end
+		local function onChar(char) spawn(function() _espSetupCharacter(player, char) end) end
 		if player.Character then onChar(player.Character) end
 		player.CharacterAdded:Connect(onChar)
 	end
@@ -627,7 +627,7 @@ UIS.JumpRequest:Connect(function() applyInfJumpBoost(50) end)
 UIS.InputBegan:Connect(function(input)
 	if input.UserInputType==Enum.UserInputType.Keyboard and input.KeyCode==Enum.KeyCode.Space and not UIS:GetFocusedTextBox() then
 		holdJumpPressed=true
-		task.delay(0.12,function()
+		delay(0.12,function()
 			if holdJumpPressed then
 				holdJumpActive=true
 				applyInfJumpBoost(50)
@@ -711,18 +711,25 @@ local function doAutoTPDown(force)
 end
 
 local function startAutoTP()
-	if autoTPConn then task.cancel(autoTPConn);autoTPConn=nil end
-	autoTPConn=task.spawn(function()
+	if autoTPConn then
+		pcall(function() coroutine.close(autoTPConn) end)
+		autoTPConn=nil
+	end
+	autoTPConn=coroutine.create(function()
 		while autoTPEnabled do
-			task.wait(0.1)
+			wait(0.1)
 			pcall(function() doAutoTPDown(false) end)
 		end
 	end)
+	coroutine.resume(autoTPConn)
 end
 
 local function stopAutoTP()
 	autoTPEnabled=false
-	if autoTPConn then task.cancel(autoTPConn);autoTPConn=nil end
+	if autoTPConn then
+		pcall(function() coroutine.close(autoTPConn) end)
+		autoTPConn=nil
+	end
 end
 
 local function runTPFloor()
@@ -867,11 +874,11 @@ end
 
 local function swingBatForCounter(bat,char)
 	local hum2=char:FindFirstChildOfClass("Humanoid")
-	if bat.Parent~=char then if hum2 then pcall(function() hum2:EquipTool(bat) end) end;task.wait(0.05) end
+	if bat.Parent~=char then if hum2 then pcall(function() hum2:EquipTool(bat) end) end;wait(0.05) end
 	local remote=bat:FindFirstChildOfClass("RemoteEvent") or bat:FindFirstChildOfClass("RemoteFunction")
 	if remote and remote:IsA("RemoteEvent") then
-		pcall(function() remote:FireServer() end);task.wait(0.15);pcall(function() remote:FireServer() end)
-	else pcall(function() bat:Activate() end);task.wait(0.15);pcall(function() bat:Activate() end) end
+		pcall(function() remote:FireServer() end);wait(0.15);pcall(function() remote:FireServer() end)
+	else pcall(function() bat:Activate() end);wait(0.15);pcall(function() bat:Activate() end) end
 end
 
 startBatCounter=function()
@@ -884,10 +891,10 @@ startBatCounter=function()
 		local st=hum2:GetState()
 		if st==Enum.HumanoidStateType.Physics or st==Enum.HumanoidStateType.Ragdoll or st==Enum.HumanoidStateType.FallingDown then
 			batCounterDebounce=true
-			task.spawn(function()
+			spawn(function()
 				local bat=findBatForCounter()
 				if bat then swingBatForCounter(bat,char) end
-				task.wait(0.5);batCounterDebounce=false
+				wait(0.5);batCounterDebounce=false
 			end)
 		end
 	end)
@@ -1031,11 +1038,11 @@ RunService.Heartbeat:Connect(function()
 end)
 
 LP.CharacterAdded:Connect(function(char)
-	task.wait(0.5)
+	wait(0.5)
 	setupSpeedIndicator(char)
 	if medusaCounterEnabled then setupMedusa(char) end
 	if batCounterEnabled then startBatCounter() end
-	if unwalkEnabled then task.wait(0.5);startUnwalk() end
+	if unwalkEnabled then wait(0.5);startUnwalk() end
 end)
 
 if LP.Character then setupSpeedIndicator(LP.Character) end
@@ -1349,7 +1356,7 @@ local function saveConfig()
 	if writefile then pcall(function() writefile("SecretDuel.json",HS:JSONEncode(cfg)) end) end
 end
 
-task.spawn(function() while task.wait(5) do saveConfig() end end)
+spawn(function() while wait(5) do if V.autoSaveEnabled then saveConfig() end end end)
 
 local setInstaGrab,setInfJumpVisual,setAntiRagVisual,setMedusaVisual
 local setUnwalkVisual,setAntiLagVisual,setAutoSwingVisual
@@ -1598,7 +1605,10 @@ local function buildSecretAnimChanger()
 			TS:Create(label, TweenInfo.new(0.15), {TextColor3 = Color3.fromRGB(0, 0, 0)}):Play()
 			
 			for key, id in pairs(animData) do
-				local path = string.split(key, ".")
+				local path = {}
+				for word in string.gmatch(key, "[^%.]+") do
+					table.insert(path, word)
+				end
 				local current = Animate
 				for i = 1, #path do
 					current = current[path[i]]
@@ -1613,7 +1623,7 @@ local function buildSecretAnimChanger()
 				LP.Character.Humanoid.Jump = true
 			end
 			
-			task.delay(0.35, function()
+			delay(0.35, function()
 				statusIcon.Text = ""
 				TS:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = COL_ROW}):Play()
 				TS:Create(label, TweenInfo.new(0.15), {TextColor3 = COL_WHITE}):Play()
@@ -1658,7 +1668,7 @@ local function buildSecretAnimChanger()
 	end)
 	
 	LP.CharacterAdded:Connect(function(char)
-		task.wait(0.5)
+		wait(0.5)
 		Animate = char:FindFirstChild("Animate")
 	end)
 	
@@ -2743,7 +2753,7 @@ local function buildGui()
 	end)
 	
 	-- ============================================================
-	-- INTRO ANIMATION (Secret Hub) - FIXED
+	-- INTRO ANIMATION (Secret Hub)
 	-- ============================================================
 	if _introEnabled then
 		local origSize = main.Size
